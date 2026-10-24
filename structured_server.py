@@ -1755,10 +1755,19 @@ def jev_schema(body):
                 {"name": str(n), "description": d} for n, d in crit.items()
             ]
         elif kind == "score":
+            # Accept both the standard System One `legend` map {value: desc}
+            # and djev's `criteria` ordered list of level labels. Normalize a
+            # legend map to an ordered list of its descriptions (the labels);
+            # the score is the index of the selected level, matching the
+            # standard System One score semantics.
+            if crit is None and isinstance(q.get("legend"), dict):
+                crit = q["legend"]
+            if isinstance(crit, dict):
+                crit = [str(v) for v in crit.values()]
             if not isinstance(crit, list):
                 raise SchemaError(
                     f"question {qid!r}: score criteria must be an ordered list "
-                    "of levels"
+                    "of levels (or a standard legend map)"
                 )
             item["levels"] = crit
         elif kind in ("span", "spans"):
