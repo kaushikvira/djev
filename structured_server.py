@@ -1954,9 +1954,12 @@ class Handler(BaseHTTPRequestHandler):
         probing this route can then send /v1/systemone here by the body's
         "model"."""
         try:
-            with urllib.request.urlopen(
-                ARGS.upstream.rstrip("/") + "/v1/models", timeout=10
-            ) as r:
+            req = urllib.request.Request(
+                ARGS.upstream.rstrip("/") + "/v1/models"
+            )
+            if getattr(ARGS, "upstream_key", ""):
+                req.add_header("authorization", f"Bearer {ARGS.upstream_key}")
+            with urllib.request.urlopen(req, timeout=10) as r:
                 code, body = r.status, r.read()
         except urllib.error.HTTPError as e:
             code, body = e.code, e.read()
