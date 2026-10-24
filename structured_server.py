@@ -504,11 +504,18 @@ def label_id_union(slots):
     return ids[:128]  # vLLM's cap per request. A schema needs far fewer.
 
 
+def _upstream_headers():
+    h = {"content-type": "application/json"}
+    if getattr(ARGS, "upstream_key", ""):
+        h["authorization"] = f"Bearer {ARGS.upstream_key}"
+    return h
+
+
 def upstream_chat(body, timeout=600):
     req = urllib.request.Request(
         ARGS.upstream.rstrip("/") + "/v1/chat/completions",
         data=json.dumps(body).encode(),
-        headers={"content-type": "application/json"},
+        headers=_upstream_headers(),
     )
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
@@ -517,7 +524,7 @@ def upstream_completions(body, timeout=600):
     req = urllib.request.Request(
         ARGS.upstream.rstrip("/") + "/v1/completions",
         data=json.dumps(body).encode(),
-        headers={"content-type": "application/json"},
+        headers=_upstream_headers(),
     )
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
@@ -2254,6 +2261,8 @@ def main():
     global ARGS, CANVAS_LEN, CANVAS_STEP, MAX_SAMPLES
     p = argparse.ArgumentParser()
     p.add_argument("--upstream", default="http://127.0.0.1:8010")
+    p.add_argument("--upstream-key", default=os.environ.get("VLLM_UPSTREAM_KEY", ""),
+                   help="Bearer key to send to the upstream vLLM (if it requires auth); defaults to $VLLM_UPSTREAM_KEY")
     p.add_argument("--model", default="dgemma")
     p.add_argument("--tokenizer", default="/models/dgemma", help="HF id or local path")
     p.add_argument("--canvas", type=int, default=64, help="the served canvas length")
